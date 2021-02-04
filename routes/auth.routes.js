@@ -1,24 +1,29 @@
 const {Router} = require('express')
 //encrypting data
 const bcrypt = require('bcryptjs')
+//config configuration
+const config = require('config')
+//jwt
+const jwt = require('jsonwebtoken')
 //validator
 const {check, validationResult} = require('express-validator')
 //model
 const User = require('../models/User')
+//router
 const router = Router()
 
-//  /api/auth/register
+// api/auth/register
 router.post(
     '/register',
     [
-        check('email', 'Incorrect email '),
-        check('password', 'Password should be atleast 6 symbols').isLength({min:6})
+        check('email', 'Incorrect email ').isEmail(),
+        check('password', 'Password should be at least 6 symbols').isLength({min:6})
     ],
     async (req, res) => {
     try {
         const errors = validationResult(req)
         if (!errors.isEmpty()){
-            return ews.status(400).json({
+            return res.status(400).json({
                 errors: errors.array(),
                 message: 'Incorrect registration data'
             })
@@ -36,20 +41,45 @@ router.post(
     } catch (e){
         res.status(500).json({message: 'Something goes wrong, please try again!'})
     }
-
-
-    //await promise and save
-    await todo.save()
-    res.redirect('/')
 })
 
-//  /api/auth/register
-router.post('/login', async (req, res) => {
-    //created new object Todo
+// api/auth/login
+router.post('/login',
+    [
+        check('email', 'Incorrect email').normalizeEmail().isEmail(),
+        check('password', 'Empty password').exists()
+    ],
+    async (req, res) => {
+    try {
+        const errors = validationResult(req)
+        if (!errors.isEmpty()){
+            return res.status(400).json({
+                errors: errors.array(),
+                message: 'Incorrect login data'
+            })
+        }
 
+        const {email, password} = req.body
+        const user = await User.findOne({email})
+        if (!user){
+            return res.status(400).json({message: 'No user found'})
+        }
 
+        const isMatch = await bcrypt.compare(password, user.password)
+        if (!isMatch){
+            return res.status(400).json({message: 'Incorrect password, please try again'})
+        }
 
-    //res.redirect('/')
+        const token = jwt.sign(
+            {userId: user.id},
+            config.get('jwtSecret'),
+            {expiresIn: '1h'}
+        )
+        res.json({token, userId: user.id})
+
+    } catch (e){
+        res.status(500).json({message: 'Something goes wrong, please try again!'})
+    }
 })
 
 //EXPORT!!! DO NOT  FORGET!!!
