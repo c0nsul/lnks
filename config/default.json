@@ -1,5 +1,5 @@
 {
   "port": 5000,
   "mongoURI": "mongodb+srv://mongoUser:mongoPass@cluster0.m4egh.mongodb.net/app",
-  "jwtSercret": "secretCode"
+  "jwtSecret": "secretCode"
 }
